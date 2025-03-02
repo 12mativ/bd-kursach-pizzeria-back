@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  # MySQL service
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+    # Root password for MySQL
+      MYSQL_ROOT_PASSWORD: admin
+      # Name of the database to be created
+      MYSQL_DATABASE: bd-kursach-pizzeria 
+      # Username for MySQL user      
+      MYSQL_USER: admin    
+      # Password for MySQL user            
+      MYSQL_PASSWORD: admin 
+      # Mapping MySQL port           
+    ports:
+      - 3306:3306                              
