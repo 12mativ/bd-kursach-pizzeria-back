@@ -4,7 +4,7 @@ import { createConnection, Connection } from 'mysql2/promise';
 @Injectable()
 export class DatabaseService {
   // Property to hold the connection to MySQL database
-  private connection: Connection; 
+  public connection: Connection; 
   // Logger instance
   private readonly logger = new Logger(DatabaseService.name); 
 
@@ -25,16 +25,101 @@ export class DatabaseService {
       // Log a message if the connection is successful
       this.logger.log('Connected to MySQL database'); 
 
-      const sql = `CREATE TABLE IF NOT EXISTS tasks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        status BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    );`
+      const employeeSql = `
+        CREATE TABLE IF NOT EXISTS Employee (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          surname VARCHAR(255) NOT NULL,
+          patronymic VARCHAR(255),
+          phone VARCHAR(15) NOT NULL
+        );
+      `
 
-    const [rows, fields] = await this.connection.query(sql);
+      const pizzaSql = `
+        CREATE TABLE IF NOT EXISTS Pizza (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          price DECIMAL(10, 2) NOT NULL,
+          size ENUM('small', 'medium', 'large') NOT NULL
+        );
+      `
+
+      const ingredientSql = `
+        CREATE TABLE IF NOT EXISTS Ingredient (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          remainingQuantity INT NOT NULL
+        );
+      `
+
+      const workplaceSql = `
+        CREATE TABLE IF NOT EXISTS Workplace (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          status ENUM('free', 'occupied', 'partly occupied') NOT NULL
+        );
+      `
+
+      const orderSql = `
+        CREATE TABLE IF NOT EXISTS PizzaOrder (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          orderDate DATETIME NOT NULL,
+          status ENUM('preparing', 'ready') NOT NULL,
+          totalAmount DECIMAL(10, 2) NOT NULL
+        );
+      `
+
+      const drinkSql = `
+        CREATE TABLE IF NOT EXISTS Drink (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          price DECIMAL(10, 2) NOT NULL
+        );
+      `
+
+      const clientSql = `
+        CREATE TABLE IF NOT EXISTS Client (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          firstName VARCHAR(255) NOT NULL,
+          lastName VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE,
+          phoneNumber VARCHAR(15) NOT NULL
+        );
+      `
+
+      const s = `
+        CREATE TABLE IF NOT EXISTS EmployeeWorkplace (
+          employee_id INT NOT NULL,
+          workplace_id INT NOT NULL,
+          PRIMARY KEY (employee_id, workplace_id),
+          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE CASCADE,
+          FOREIGN KEY (workplace_id) REFERENCES Workplace(id) ON DELETE CASCADE
+        );
+      `
+
+      const sb = `
+        CREATE TABLE IF NOT EXISTS PizzaIngredient (
+          pizza_id INT NOT NULL,
+          ingredient_id INT NOT NULL,
+          PRIMARY KEY (pizza_id, ingredient_id),
+          FOREIGN KEY (pizza_id) REFERENCES Pizza(id) ON DELETE CASCADE,
+          FOREIGN KEY (ingredient_id) REFERENCES Ingredient(id) ON DELETE CASCADE
+        );
+      `
+
+    await this.connection.query(employeeSql);
+    await this.connection.query(pizzaSql);
+    await this.connection.query(ingredientSql);
+    await this.connection.query(workplaceSql);
+    await this.connection.query(orderSql);
+    await this.connection.query(drinkSql);
+    await this.connection.query(clientSql);
+    await this.connection.query(s);
+    await this.connection.query(sb);
+
   } catch (error) {
       // Log an error message if the connection fails
       this.logger.error('Error connecting to MySQL database', error.stack); 
@@ -44,5 +129,35 @@ export class DatabaseService {
   getConnection(): Connection {
     // return the connection to MySQL
     return this.connection; 
+  }
+
+  async insertAndReturn<T>(tableName: string, data: Record<string, any>): Promise<T> {
+    // Формируем SQL-запрос для вставки
+    const columns = Object.keys(data).join(', ');
+    const values = Object.values(data);
+    const placeholders = values.map(() => '?').join(', ');
+
+    const insertSql = `
+      INSERT INTO ${tableName} (${columns})
+      VALUES (${placeholders});
+    `;
+
+    // Выполняем запрос на вставку
+    const [insertResult] = await this.connection.query(insertSql, values);
+
+    // Получаем ID новой записи
+    //@ts-ignore
+    const newId = insertResult.insertId;
+
+    // Формируем SQL-запрос для получения новой записи
+    const selectSql = `
+      SELECT * FROM ${tableName} WHERE id = ?;
+    `;
+
+    // Выполняем запрос на выборку
+    const [rows] = await this.connection.query(selectSql, [newId]);
+
+    // Возвращаем новую запись
+    return rows[0] as T;
   }
 }
