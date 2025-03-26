@@ -24,8 +24,11 @@ export class EmployeesService {
     return newEmployee;
   }
 
-  findAll() {
-    return `This action returns all employees`;
+  async findAll() {
+    const sql = "SELECT * FROM Employee;"
+    const [employees] = await this.dbService.connection.query(sql);
+    console.log(employees)
+    return employees;
   }
 
   findOne(id: number) {
