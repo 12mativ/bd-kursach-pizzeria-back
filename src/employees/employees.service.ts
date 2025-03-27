@@ -25,10 +25,12 @@ export class EmployeesService {
   }
 
   async findAll() {
-    const sql = "SELECT * FROM Employee;"
+    const sql = 'SELECT * FROM Employee;';
     const [employees] = await this.dbService.connection.query(sql);
-    console.log(employees)
-    return employees;
+    setTimeout(() => {
+      console.log(employees);
+      return employees;
+    }, 3000);
   }
 
   findOne(id: number) {
