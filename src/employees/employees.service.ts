@@ -34,8 +34,14 @@ export class EmployeesService {
     return `This action returns a #${id} employee`;
   }
 
-  update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    return `This action updates a #${id} employee`;
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
+    const updatedEmployee = await this.dbService.updateAndReturn<Employee>(
+      'Employee',
+      id,
+      updateEmployeeDto
+    );
+
+    return updatedEmployee;
   }
 
   remove(id: number) {

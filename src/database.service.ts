@@ -160,4 +160,38 @@ export class DatabaseService {
     // Возвращаем новую запись
     return rows[0] as T;
   }
+
+  async updateAndReturn<T>(
+    tableName: string,
+    id: number,
+    data: Record<string, any>
+  ): Promise<T> {
+    // Формируем SQL-запрос для обновления
+    const setClause = Object.keys(data)
+      .map(key => `${key} = ?`)
+      .join(', ');
+  
+    const values = Object.values(data);
+    values.push(id); // Добавляем ID в конец массива значений
+  
+    const updateSql = `
+      UPDATE ${tableName}
+      SET ${setClause}
+      WHERE id = ?;
+    `;
+  
+    // Выполняем запрос на обновление
+    await this.connection.query(updateSql, values);
+  
+    // Формируем SQL-запрос для получения обновленной записи
+    const selectSql = `
+      SELECT * FROM ${tableName} WHERE id = ?;
+    `;
+  
+    // Выполняем запрос на выборку
+    const [rows] = await this.connection.query(selectSql, [id]);
+  
+    // Возвращаем обновленную запись
+    return rows[0] as T;
+  }
 }
