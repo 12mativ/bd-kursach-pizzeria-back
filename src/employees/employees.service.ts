@@ -44,7 +44,12 @@ export class EmployeesService {
     return updatedEmployee;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} employee`;
+  async remove(id: number) {
+    const deletedEmployee = await this.dbService.deleteAndReturn<Employee | null>(
+      'Employee',
+      id,
+    )
+
+    return deletedEmployee;
   }
 }

@@ -4,13 +4,13 @@ import { createConnection, Connection } from 'mysql2/promise';
 @Injectable()
 export class DatabaseService {
   // Property to hold the connection to MySQL database
-  public connection: Connection; 
+  public connection: Connection;
   // Logger instance
-  private readonly logger = new Logger(DatabaseService.name); 
+  private readonly logger = new Logger(DatabaseService.name);
 
   // Call the connect method when an instance of DatabaseService is created
   constructor() {
-    this.connect(); 
+    this.connect();
   }
 
   private async connect() {
@@ -23,7 +23,7 @@ export class DatabaseService {
         database: 'bd-kursach-pizzeria',
       });
       // Log a message if the connection is successful
-      this.logger.log('Connected to MySQL database'); 
+      this.logger.log('Connected to MySQL database');
 
       const employeeSql = `
         CREATE TABLE IF NOT EXISTS Employee (
@@ -33,7 +33,7 @@ export class DatabaseService {
           patronymic VARCHAR(255),
           phone VARCHAR(15) NOT NULL
         );
-      `
+      `;
 
       const pizzaSql = `
         CREATE TABLE IF NOT EXISTS Pizza (
@@ -43,7 +43,7 @@ export class DatabaseService {
           price DECIMAL(10, 2) NOT NULL,
           size ENUM('small', 'medium', 'large') NOT NULL
         );
-      `
+      `;
 
       const ingredientSql = `
         CREATE TABLE IF NOT EXISTS Ingredient (
@@ -52,7 +52,7 @@ export class DatabaseService {
           description TEXT,
           remainingQuantity INT NOT NULL
         );
-      `
+      `;
 
       const workplaceSql = `
         CREATE TABLE IF NOT EXISTS Workplace (
@@ -60,7 +60,7 @@ export class DatabaseService {
           name VARCHAR(255) NOT NULL,
           status ENUM('free', 'occupied', 'partly occupied') NOT NULL
         );
-      `
+      `;
 
       const orderSql = `
         CREATE TABLE IF NOT EXISTS PizzaOrder (
@@ -69,7 +69,7 @@ export class DatabaseService {
           status ENUM('preparing', 'ready') NOT NULL,
           totalAmount DECIMAL(10, 2) NOT NULL
         );
-      `
+      `;
 
       const drinkSql = `
         CREATE TABLE IF NOT EXISTS Drink (
@@ -78,7 +78,7 @@ export class DatabaseService {
           description TEXT,
           price DECIMAL(10, 2) NOT NULL
         );
-      `
+      `;
 
       const clientSql = `
         CREATE TABLE IF NOT EXISTS Client (
@@ -88,7 +88,7 @@ export class DatabaseService {
           email VARCHAR(255) UNIQUE,
           phoneNumber VARCHAR(15) NOT NULL
         );
-      `
+      `;
 
       const s = `
         CREATE TABLE IF NOT EXISTS EmployeeWorkplace (
@@ -98,7 +98,7 @@ export class DatabaseService {
           FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE CASCADE,
           FOREIGN KEY (workplace_id) REFERENCES Workplace(id) ON DELETE CASCADE
         );
-      `
+      `;
 
       const sb = `
         CREATE TABLE IF NOT EXISTS PizzaIngredient (
@@ -108,30 +108,32 @@ export class DatabaseService {
           FOREIGN KEY (pizza_id) REFERENCES Pizza(id) ON DELETE CASCADE,
           FOREIGN KEY (ingredient_id) REFERENCES Ingredient(id) ON DELETE CASCADE
         );
-      `
+      `;
 
-    await this.connection.query(employeeSql);
-    await this.connection.query(pizzaSql);
-    await this.connection.query(ingredientSql);
-    await this.connection.query(workplaceSql);
-    await this.connection.query(orderSql);
-    await this.connection.query(drinkSql);
-    await this.connection.query(clientSql);
-    await this.connection.query(s);
-    await this.connection.query(sb);
-
-  } catch (error) {
+      await this.connection.query(employeeSql);
+      await this.connection.query(pizzaSql);
+      await this.connection.query(ingredientSql);
+      await this.connection.query(workplaceSql);
+      await this.connection.query(orderSql);
+      await this.connection.query(drinkSql);
+      await this.connection.query(clientSql);
+      await this.connection.query(s);
+      await this.connection.query(sb);
+    } catch (error) {
       // Log an error message if the connection fails
-      this.logger.error('Error connecting to MySQL database', error.stack); 
+      this.logger.error('Error connecting to MySQL database', error.stack);
     }
   }
 
   getConnection(): Connection {
     // return the connection to MySQL
-    return this.connection; 
+    return this.connection;
   }
 
-  async insertAndReturn<T>(tableName: string, data: Record<string, any>): Promise<T> {
+  async insertAndReturn<T>(
+    tableName: string,
+    data: Record<string, any>,
+  ): Promise<T> {
     // Формируем SQL-запрос для вставки
     const columns = Object.keys(data).join(', ');
     const values = Object.values(data);
@@ -164,34 +166,53 @@ export class DatabaseService {
   async updateAndReturn<T>(
     tableName: string,
     id: number,
-    data: Record<string, any>
+    data: Record<string, any>,
   ): Promise<T> {
     // Формируем SQL-запрос для обновления
     const setClause = Object.keys(data)
-      .map(key => `${key} = ?`)
+      .map((key) => `${key} = ?`)
       .join(', ');
-  
+
     const values = Object.values(data);
     values.push(id); // Добавляем ID в конец массива значений
-  
+
     const updateSql = `
       UPDATE ${tableName}
       SET ${setClause}
       WHERE id = ?;
     `;
-  
+
     // Выполняем запрос на обновление
     await this.connection.query(updateSql, values);
-  
+
     // Формируем SQL-запрос для получения обновленной записи
     const selectSql = `
       SELECT * FROM ${tableName} WHERE id = ?;
     `;
-  
+
     // Выполняем запрос на выборку
     const [rows] = await this.connection.query(selectSql, [id]);
-  
+
     // Возвращаем обновленную запись
     return rows[0] as T;
+  }
+
+  async deleteAndReturn<T>(tableName: string, id: number): Promise<T | null> {
+    // Сначала получаем запись, которую будем удалять
+    const [selectResult] = await this.connection.query<any[]>(
+      `SELECT * FROM ${tableName} WHERE id = ?`,
+      [id],
+    );
+
+    // Если запись не найдена, возвращаем null
+    if (!selectResult || selectResult.length === 0) {
+      return null;
+    }
+
+    // Выполняем удаление записи
+    await this.connection.query(`DELETE FROM ${tableName} WHERE id = ?`, [id]);
+
+    // Возвращаем удаленную запись
+    return selectResult[0] as T;
   }
 }
