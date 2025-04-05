@@ -90,6 +90,17 @@ export class DatabaseService {
         );
       `;
 
+      const userSql = `
+        CREATE TABLE IF NOT EXISTS User (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          username VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL,
+          role ENUM('admin', 'manager', 'employee') NOT NULL,
+          employee_id INT,
+          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE SET NULL
+        );
+      `;
+
       const s = `
         CREATE TABLE IF NOT EXISTS EmployeeWorkplace (
           employee_id INT NOT NULL,
@@ -117,6 +128,7 @@ export class DatabaseService {
       await this.connection.query(orderSql);
       await this.connection.query(drinkSql);
       await this.connection.query(clientSql);
+      await this.connection.query(userSql);
       await this.connection.query(s);
       await this.connection.query(sb);
     } catch (error) {
