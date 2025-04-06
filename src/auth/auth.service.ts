@@ -2,6 +2,25 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database.service';
 import * as bcrypt from 'bcrypt';
+import { RegisterClientDto } from './dto/register-client.dto';
+import { RegisterEmployeeDto } from './dto/register-employee.dto';
+
+interface Client {
+  id: number;
+  name: string;
+  surname: string;
+  patronymic: string | null;
+  phone: string;
+  email: string;
+}
+
+interface Employee {
+  id: number;
+  name: string;
+  surname: string;
+  patronymic: string | null;
+  phone: string;
+}
 
 export interface User {
   id: number;
@@ -9,6 +28,7 @@ export interface User {
   password: string;
   role: string;
   employee_id: number | null;
+  client_id: number | null;
 }
 
 @Injectable()
@@ -37,16 +57,52 @@ export class AuthService {
     };
   }
 
-  async register(username: string, password: string, role: string, employeeId?: number) {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await this.dbService.insertAndReturn<User>('User', {
-      username,
-      password: hashedPassword,
-      role,
-      employee_id: employeeId || null,
+  async registerClient(registerDto: RegisterClientDto) {
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+
+    // Создаем клиента
+    const client = await this.dbService.insertAndReturn<Client>('Client', {
+      name: registerDto.name,
+      surname: registerDto.surname,
+      patronymic: registerDto.patronymic,
+      phone: registerDto.phone,
+      email: registerDto.email,
     });
 
-    const { password: _, ...result } = newUser;
+    // Создаем пользователя
+    const newUser = await this.dbService.insertAndReturn<User>('User', {
+      username: registerDto.email,
+      password: hashedPassword,
+      role: 'CLIENT',
+      client_id: client.id,
+      employee_id: null,
+    });
+
+    const { password, ...result } = newUser;
+    return result;
+  }
+
+  async registerEmployee(registerDto: RegisterEmployeeDto) {
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+
+    // Создаем сотрудника
+    const employee = await this.dbService.insertAndReturn<Employee>('Employee', {
+      name: registerDto.name,
+      surname: registerDto.surname,
+      patronymic: registerDto.patronymic,
+      phone: registerDto.phone,
+    });
+
+    // Создаем пользователя
+    const newUser = await this.dbService.insertAndReturn<User>('User', {
+      username: registerDto.username,
+      password: hashedPassword,
+      role: registerDto.role,
+      employee_id: employee.id,
+      client_id: null,
+    });
+
+    const { password, ...result } = newUser;
     return result;
   }
 } 

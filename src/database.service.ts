@@ -83,10 +83,11 @@ export class DatabaseService {
       const clientSql = `
         CREATE TABLE IF NOT EXISTS Client (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          firstName VARCHAR(255) NOT NULL,
-          lastName VARCHAR(255) NOT NULL,
-          email VARCHAR(255) UNIQUE,
-          phoneNumber VARCHAR(15) NOT NULL
+          name VARCHAR(255) NOT NULL,
+          surname VARCHAR(255) NOT NULL,
+          patronymic VARCHAR(255),
+          phone VARCHAR(15) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL
         );
       `;
 
@@ -95,9 +96,11 @@ export class DatabaseService {
           id INT AUTO_INCREMENT PRIMARY KEY,
           username VARCHAR(255) NOT NULL UNIQUE,
           password VARCHAR(255) NOT NULL,
-          role ENUM('admin', 'manager', 'employee') NOT NULL,
+          role ENUM('ADMIN', 'MANAGER', 'PIZZAMAKER', 'CASHIER', 'CLIENT') NOT NULL,
           employee_id INT,
-          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE SET NULL
+          client_id INT,
+          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE SET NULL,
+          FOREIGN KEY (client_id) REFERENCES Client(id) ON DELETE SET NULL
         );
       `;
 

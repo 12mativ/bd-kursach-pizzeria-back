@@ -1,10 +1,14 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterClientDto } from './dto/register-client.dto';
+import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
 
-@ApiTags('Auth')
+@ApiTags('Аутентификация')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -30,27 +34,43 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  @Post('register')
-  @ApiOperation({ summary: 'Регистрация нового пользователя' })
-  @ApiBody({ type: RegisterDto })
+  @Post('register/client')
+  @ApiOperation({ summary: 'Регистрация нового клиента' })
+  @ApiBody({ type: RegisterClientDto })
   @ApiResponse({ 
     status: 201, 
-    description: 'Пользователь успешно зарегистрирован',
+    description: 'Клиент успешно зарегистрирован',
     schema: {
       example: {
         id: 1,
-        username: 'admin',
-        role: 'admin',
-        employee_id: null
+        username: 'client',
+        role: 'CLIENT',
+        client_id: 1
       }
     }
   })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(
-      registerDto.username,
-      registerDto.password,
-      registerDto.role,
-      registerDto.employeeId,
-    );
+  async registerClient(@Body() registerDto: RegisterClientDto) {
+    return this.authService.registerClient(registerDto);
+  }
+
+  @Post('register/employee')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Регистрация нового сотрудника (только для администраторов)' })
+  @ApiBody({ type: RegisterEmployeeDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Сотрудник успешно зарегистрирован',
+    schema: {
+      example: {
+        id: 1,
+        username: 'employee',
+        role: 'PIZZAMAKER',
+        employee_id: 1
+      }
+    }
+  })
+  async registerEmployee(@Body() registerDto: RegisterEmployeeDto) {
+    return this.authService.registerEmployee(registerDto);
   }
 } 
