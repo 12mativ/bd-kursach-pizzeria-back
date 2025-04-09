@@ -1,9 +1,9 @@
-import { Controller, Post, Body, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterClientDto } from './dto/register-client.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
@@ -27,7 +27,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Неверные учетные данные' })
   async login(@Body() loginDto: LoginDto) {
-    const user = await this.authService.validateUser(loginDto.username, loginDto.password);
+    const user = await this.authService.validateUser(loginDto.login, loginDto.password);
     if (!user) {
       throw new UnauthorizedException('Неверные учетные данные');
     }
@@ -42,10 +42,13 @@ export class AuthController {
     description: 'Клиент успешно зарегистрирован',
     schema: {
       example: {
-        id: 1,
-        username: 'client',
-        role: 'CLIENT',
-        client_id: 1
+        user: {
+          id: 1,
+          username: 'client@example.com',
+          role: 'CLIENT',
+          client_id: 1
+        },
+        access_token: 'eyJhbGciOiJIUzI1NiIs...'
       }
     }
   })
@@ -56,6 +59,7 @@ export class AuthController {
   @Post('register/employee')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Регистрация нового сотрудника (только для администраторов)' })
   @ApiBody({ type: RegisterEmployeeDto })
   @ApiResponse({ 
@@ -63,14 +67,47 @@ export class AuthController {
     description: 'Сотрудник успешно зарегистрирован',
     schema: {
       example: {
-        id: 1,
-        username: 'employee',
-        role: 'PIZZAMAKER',
-        employee_id: 1
+        user: {
+          id: 1,
+          username: 'employee',
+          role: 'PIZZAMAKER',
+          employee_id: 1
+        },
+        access_token: 'eyJhbGciOiJIUzI1NiIs...'
       }
     }
   })
   async registerEmployee(@Body() registerDto: RegisterEmployeeDto) {
     return this.authService.registerEmployee(registerDto);
+  }
+
+  @Get('check-session')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Проверка валидности сессии' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Сессия валидна',
+    schema: {
+      example: {
+        valid: true,
+        user: {
+          id: 1,
+          username: 'admin',
+          role: 'ADMIN'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Невалидная сессия' })
+  async checkSession(@Body() user: any) {
+    return {
+      valid: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      }
+    };
   }
 } 

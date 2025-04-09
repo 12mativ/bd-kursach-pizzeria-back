@@ -19,7 +19,7 @@ export class RegisterClientDto {
   @ApiProperty({ example: '+79991234567', description: 'Номер телефона клиента' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\+7\d{10}$/, { message: 'Номер телефона должен быть в формате +7XXXXXXXXXX' })
+  @Matches(/^7\d{10}$/, { message: 'Номер телефона должен быть в формате 7XXXXXXXXXX' })
   phone: string;
 
   @ApiProperty({ example: 'client@example.com', description: 'Email клиента' })

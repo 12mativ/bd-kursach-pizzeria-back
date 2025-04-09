@@ -38,9 +38,14 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string, password: string): Promise<any> {
-    const sql = 'SELECT * FROM User WHERE username = ?';
-    const [users] = await this.dbService.connection.query(sql, [username]);
+  async validateUser(login: string, password: string): Promise<any> {
+    const sql = `
+      SELECT u.*, c.email 
+      FROM User u 
+      LEFT JOIN Client c ON u.client_id = c.id 
+      WHERE u.username = ? OR c.email = ?
+    `;
+    const [users] = await this.dbService.connection.query(sql, [login, login]);
     const user = users[0];
 
     if (user && await bcrypt.compare(password, user.password)) {
@@ -79,7 +84,14 @@ export class AuthService {
     });
 
     const { password, ...result } = newUser;
-    return result;
+    return {
+      user: result,
+      access_token: this.jwtService.sign({ 
+        username: result.username, 
+        sub: result.id, 
+        role: result.role 
+      })
+    };
   }
 
   async registerEmployee(registerDto: RegisterEmployeeDto) {
@@ -103,6 +115,13 @@ export class AuthService {
     });
 
     const { password, ...result } = newUser;
-    return result;
+    return {
+      user: result,
+      access_token: this.jwtService.sign({ 
+        username: result.username, 
+        sub: result.id, 
+        role: result.role 
+      })
+    };
   }
 } 
