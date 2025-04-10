@@ -4,8 +4,8 @@ import { IsString, IsNotEmpty, MinLength, IsEnum, Matches } from 'class-validato
 export enum EmployeeRole {
   ADMIN = 'ADMIN',
   MANAGER = 'MANAGER',
-  COOK = 'COOK',
-  DELIVERY = 'DELIVERY'
+  PIZZAMAKER = 'PIZZAMAKER',
+  CASHIER = 'CASHIER'
 }
 
 export class RegisterEmployeeDto {
@@ -26,7 +26,7 @@ export class RegisterEmployeeDto {
   @ApiProperty({ example: '+79991234567', description: 'Номер телефона сотрудника' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\+7\d{10}$/, { message: 'Номер телефона должен быть в формате +7XXXXXXXXXX' })
+  @Matches(/^7\d{10}$/, { message: 'Номер телефона должен быть в формате +7XXXXXXXXXX' })
   phone: string;
 
   @ApiProperty({ example: 'employee', description: 'Имя пользователя' })

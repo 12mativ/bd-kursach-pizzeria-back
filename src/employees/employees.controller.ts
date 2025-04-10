@@ -18,18 +18,20 @@ export class EmployeesController {
     return this.employeesService.create(createEmployeeDto);
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Get()
   findAll() {
     return this.employeesService.findAll();
   }
 
+  @Roles('ADMIN', 'MANAGER')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.employeesService.findOne(+id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'MANAGER')
+  @Roles('ADMIN')
   @UseGuards(RolesGuard)
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(+id, updateEmployeeDto);

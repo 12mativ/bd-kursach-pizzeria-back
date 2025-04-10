@@ -31,7 +31,8 @@ export class DatabaseService {
           name VARCHAR(255) NOT NULL,
           surname VARCHAR(255) NOT NULL,
           patronymic VARCHAR(255),
-          phone VARCHAR(15) NOT NULL
+          phone VARCHAR(15) NOT NULL,
+          role VARCHAR(50) NOT NULL
         );
       `;
 

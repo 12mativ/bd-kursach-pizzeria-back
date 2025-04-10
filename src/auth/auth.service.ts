@@ -20,6 +20,7 @@ interface Employee {
   surname: string;
   patronymic: string | null;
   phone: string;
+  role: string;
 }
 
 export interface User {
@@ -103,6 +104,7 @@ export class AuthService {
       surname: registerDto.surname,
       patronymic: registerDto.patronymic,
       phone: registerDto.phone,
+      role: registerDto.role,
     });
 
     // Создаем пользователя
