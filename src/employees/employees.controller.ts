@@ -12,7 +12,7 @@ export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
-  @Roles('admin', 'manager')
+  @Roles('ADMIN', 'MANAGER')
   @UseGuards(RolesGuard)
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(createEmployeeDto);
@@ -29,14 +29,14 @@ export class EmployeesController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'manager')
+  @Roles('ADMIN', 'MANAGER')
   @UseGuards(RolesGuard)
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(+id, updateEmployeeDto);
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('ADMIN')
   @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
     return this.employeesService.remove(+id);

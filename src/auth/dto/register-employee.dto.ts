@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, MinLength, IsEnum, Matches } from 'class-validator';
 
+export enum EmployeeRole {
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  COOK = 'COOK',
+  DELIVERY = 'DELIVERY'
+}
+
 export class RegisterEmployeeDto {
   @ApiProperty({ example: 'Иван', description: 'Имя сотрудника' })
   @IsString()
@@ -34,12 +41,11 @@ export class RegisterEmployeeDto {
   password: string;
 
   @ApiProperty({ 
-    example: 'PIZZAMAKER', 
+    example: 'ADMIN', 
     description: 'Роль сотрудника',
-    enum: ['MANAGER', 'PIZZAMAKER', 'CASHIER']
+    enum: EmployeeRole
   })
-  @IsString()
+  @IsEnum(EmployeeRole)
   @IsNotEmpty()
-  @IsEnum(['MANAGER', 'PIZZAMAKER', 'CASHIER'])
-  role: string;
+  role: EmployeeRole;
 } 

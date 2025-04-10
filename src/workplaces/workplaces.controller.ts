@@ -12,7 +12,7 @@ export class WorkplacesController {
   constructor(private readonly workplacesService: WorkplacesService) {}
 
   @Post()
-  @Roles('admin', 'manager')
+  @Roles('ADMIN', 'MANAGER')
   @UseGuards(RolesGuard)
   create(@Body() createWorkplaceDto: CreateWorkplaceDto) {
     return this.workplacesService.create(createWorkplaceDto);
@@ -29,14 +29,14 @@ export class WorkplacesController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'manager')
+  @Roles('ADMIN', 'MANAGER')
   @UseGuards(RolesGuard)
   update(@Param('id') id: string, @Body() updateWorkplaceDto: UpdateWorkplaceDto) {
     return this.workplacesService.update(+id, updateWorkplaceDto);
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('ADMIN')
   @UseGuards(RolesGuard)
   remove(@Param('id') id: string) {
     return this.workplacesService.remove(+id);

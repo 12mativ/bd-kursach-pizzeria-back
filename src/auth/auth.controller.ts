@@ -1,17 +1,24 @@
-import { Controller, Post, Body, UnauthorizedException, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, UseGuards, Get, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterClientDto } from './dto/register-client.dto';
-import { RegisterEmployeeDto } from './dto/register-employee.dto';
+import { RegisterEmployeeDto, EmployeeRole } from './dto/register-employee.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { DatabaseService } from 'src/database.service';
 
 @ApiTags('Аутентификация')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private dbService: DatabaseService,
+    private jwtService: JwtService
+  ) {}
 
   @Post('login')
   @ApiOperation({ summary: 'Вход в систему' })
@@ -100,14 +107,64 @@ export class AuthController {
     }
   })
   @ApiResponse({ status: 401, description: 'Невалидная сессия' })
-  async checkSession(@Body() user: any) {
+  async checkSession(@Request() req) {
     return {
       valid: true,
       user: {
-        id: user.id,
-        username: user.username,
-        role: user.role
+        id: req.user.id,
+        username: req.user.username,
+        role: req.user.role
       }
     };
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Выход из системы' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Успешный выход из системы',
+    schema: {
+      example: {
+        message: 'Вы успешно вышли из системы'
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Невалидная сессия' })
+  async logout() {
+    return {
+      message: 'Вы успешно вышли из системы'
+    };
+  }
+
+  @Post('create-admin')
+  @ApiOperation({ summary: 'Создание администратора (временный эндпоинт)' })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Администратор успешно создан',
+    schema: {
+      example: {
+        user: {
+          id: 1,
+          username: 'admin',
+          role: 'ADMIN'
+        },
+        access_token: 'eyJhbGciOiJIUzI1NiIs...'
+      }
+    }
+  })
+  async createAdmin() {
+    const adminData: RegisterEmployeeDto = {
+      username: 'admin',
+      password: 'admin',
+      name: '',
+      surname: '',
+      patronymic: "",
+      phone: '',
+      role: EmployeeRole.ADMIN
+    };
+
+    return this.authService.registerEmployee(adminData);
   }
 } 

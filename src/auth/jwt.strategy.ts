@@ -1,27 +1,27 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { DatabaseService } from '../database.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private dbService: DatabaseService) {
+  constructor(private configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET не найден в конфигурации');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'fcwfhgekf123-23hdhQ3', // В продакшене использовать переменные окружения
+      secretOrKey: secret,
     });
   }
 
   async validate(payload: any) {
-    const sql = 'SELECT * FROM User WHERE id = ?';
-    const [users] = await this.dbService.connection.query(sql, [payload.sub]);
-    const user = users[0];
-
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
-    return { id: user.id, username: user.username, role: user.role };
+    return {
+      id: payload.sub,
+      username: payload.username,
+      role: payload.role
+    };
   }
 } 
