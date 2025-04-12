@@ -68,8 +68,6 @@ export class EmployeesController {
   }
 
   @Get(':id/workplaces')
-  @Roles('ADMIN', 'MANAGER')
-  @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Получить все рабочие места сотрудника' })
   @ApiResponse({ status: 200, description: 'Список рабочих мест сотрудника' })
   getEmployeeWorkplaces(@Param('id') id: string) {
