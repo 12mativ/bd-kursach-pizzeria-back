@@ -36,6 +36,16 @@ export class DatabaseService {
         );
       `;
 
+      const employeeWorkplaceSql = `
+        CREATE TABLE IF NOT EXISTS EmployeeWorkplace (
+          employee_id INT NOT NULL,
+          workplace_id INT NOT NULL,
+          PRIMARY KEY (employee_id, workplace_id),
+          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE CASCADE,
+          FOREIGN KEY (workplace_id) REFERENCES Workplace(id) ON DELETE CASCADE
+        );
+      `;
+
       const pizzaSql = `
         CREATE TABLE IF NOT EXISTS Pizza (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -105,16 +115,6 @@ export class DatabaseService {
         );
       `;
 
-      const s = `
-        CREATE TABLE IF NOT EXISTS EmployeeWorkplace (
-          employee_id INT NOT NULL,
-          workplace_id INT NOT NULL,
-          PRIMARY KEY (employee_id, workplace_id),
-          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE CASCADE,
-          FOREIGN KEY (workplace_id) REFERENCES Workplace(id) ON DELETE CASCADE
-        );
-      `;
-
       const sb = `
         CREATE TABLE IF NOT EXISTS PizzaIngredient (
           pizza_id INT NOT NULL,
@@ -133,8 +133,8 @@ export class DatabaseService {
       await this.connection.query(drinkSql);
       await this.connection.query(clientSql);
       await this.connection.query(userSql);
-      await this.connection.query(s);
       await this.connection.query(sb);
+      await this.connection.query(employeeWorkplaceSql);
     } catch (error) {
       // Log an error message if the connection fails
       this.logger.error('Error connecting to MySQL database', error.stack);
