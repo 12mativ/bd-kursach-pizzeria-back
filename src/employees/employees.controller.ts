@@ -28,7 +28,7 @@ export class EmployeesController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'MANAGER')
+  @Roles('ADMIN', 'MANAGER', 'CLIENT', 'PIZZA_MAKER')
   findOne(@Param('id') id: string) {
     return this.employeesService.findOne(+id);
   }

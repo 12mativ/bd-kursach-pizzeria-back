@@ -6,6 +6,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { WorkplacesModule } from './workplaces/workplaces.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { PizzaModule } from './pizza/pizza.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { ConfigModule } from '@nestjs/config';
     }),
     EmployeesModule, 
     WorkplacesModule, 
-    AuthModule
+    AuthModule,
+    PizzaModule
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseService],

@@ -52,7 +52,7 @@ export class DatabaseService {
           name VARCHAR(255) NOT NULL,
           description TEXT,
           price DECIMAL(10, 2) NOT NULL,
-          size ENUM('small', 'medium', 'large') NOT NULL
+          imageUrl VARCHAR(255)
         );
       `;
 
