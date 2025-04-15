@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateWorkplaceDto } from './dto/create-workplace.dto';
 import { UpdateWorkplaceDto } from './dto/update-workplace.dto';
 import { DatabaseService } from '../database.service';
@@ -80,6 +80,10 @@ export class WorkplacesService {
       }
     }
 
+    if (employeeIds.length > workplaces[0].capacity) {
+      throw new BadRequestException("Количество сотрудников превысило вместимость рабочего места")
+    }
+
     // Удаляем все текущие назначения для этого рабочего места
     await this.dbService.connection.query(
       'DELETE FROM EmployeeWorkplace WHERE workplace_id = ?',
@@ -94,6 +98,21 @@ export class WorkplacesService {
         [values],
       );
     }
+
+    var newStatus = "free";
+
+    if (employeeIds.length === 0) {
+      newStatus = "free";
+    } else if (employeeIds.length === workplaces[0].capacity) {
+      newStatus = "occupied";
+    } else if (employeeIds.length < workplaces[0].capacity && employeeIds.length > 0) {
+        newStatus = "partly occupied";
+    }
+
+    await this.dbService.connection.query(
+      `UPDATE Workplace SET status = '${newStatus}' WHERE id = ?`,
+      [id],
+    );
 
     // Получаем обновленный список сотрудников
     const [updatedEmployees] = await this.dbService.connection.query(

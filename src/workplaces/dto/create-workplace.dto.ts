@@ -1,12 +1,15 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsEnum } from "class-validator";
+import { Transform } from "class-transformer";
+import { IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class CreateWorkplaceDto {
   @IsString()
   @ApiProperty()
   name: string;
 
-  @IsEnum(['free', 'occupied', 'partly occupied'])
-  @ApiProperty({ enum: ['free', 'occupied', 'partly occupied'] })
-  status: string;
+  @IsNumber()
+  @Transform(({ value }) => Number(value))
+  @ApiProperty()
+  @IsNotEmpty()
+  capacity: number;
 }

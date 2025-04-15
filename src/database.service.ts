@@ -69,7 +69,8 @@ export class DatabaseService {
         CREATE TABLE IF NOT EXISTS Workplace (
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
-          status ENUM('free', 'occupied', 'partly occupied') NOT NULL
+          status ENUM('free', 'occupied', 'partly occupied') NOT NULL,
+          capacity INT NOT NULL
         );
       `;
 
