@@ -7,6 +7,7 @@ import { WorkplacesModule } from './workplaces/workplaces.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { PizzaModule } from './pizza/pizza.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { PizzaModule } from './pizza/pizza.module';
     EmployeesModule, 
     WorkplacesModule, 
     AuthModule,
-    PizzaModule
+    PizzaModule,
+    ProductsModule
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseService],

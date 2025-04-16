@@ -25,14 +25,46 @@ export class DatabaseService {
       // Log a message if the connection is successful
       this.logger.log('Connected to MySQL database');
 
-      const employeeSql = `
-        CREATE TABLE IF NOT EXISTS Employee (
+      const productSql = `
+        CREATE TABLE IF NOT EXISTS Product (
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
-          surname VARCHAR(255) NOT NULL,
-          patronymic VARCHAR(255),
-          phone VARCHAR(15) NOT NULL,
-          role VARCHAR(50) NOT NULL
+          description TEXT,
+          price DECIMAL(10, 2) NOT NULL,
+          imageUrl VARCHAR(255),
+          productType ENUM('PIZZA', 'DRINK') NOT NULL
+        );
+      `;
+
+      const productVariant = `
+        CREATE TABLE IF NOT EXISTS ProductVariant (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          product_id INT NOT NULL,
+          variant_name VARCHAR(100) NOT NULL,
+          price_modifier DECIMAL(10, 2) NOT NULL,
+          FOREIGN KEY (product_id) REFERENCES Product(id) ON DELETE CASCADE
+        );
+      `;
+
+      const productOrderSql = `
+        CREATE TABLE IF NOT EXISTS ProductOrder (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          orderDate DATETIME NOT NULL,
+          status ENUM('preparing', 'ready') NOT NULL,
+          totalAmount DECIMAL(10, 2) NOT NULL
+        );
+      `;
+
+      const productOrderItem = `
+        CREATE TABLE IF NOT EXISTS ProductOrderItem (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          order_id INT NOT NULL,
+          product_id INT NOT NULL,
+          variant_id INT,
+          quantity INT NOT NULL DEFAULT 1,
+          FOREIGN KEY (order_id) REFERENCES ProductOrder(id) ON DELETE CASCADE,
+          FOREIGN KEY (product_id) REFERENCES Product(id),
+          FOREIGN KEY (variant_id) REFERENCES ProductVariant(id)
         );
       `;
 
@@ -46,25 +78,6 @@ export class DatabaseService {
         );
       `;
 
-      const pizzaSql = `
-        CREATE TABLE IF NOT EXISTS Pizza (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          description TEXT,
-          price DECIMAL(10, 2) NOT NULL,
-          imageUrl VARCHAR(255)
-        );
-      `;
-
-      const ingredientSql = `
-        CREATE TABLE IF NOT EXISTS Ingredient (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          description TEXT,
-          remainingQuantity INT NOT NULL
-        );
-      `;
-
       const workplaceSql = `
         CREATE TABLE IF NOT EXISTS Workplace (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -74,21 +87,14 @@ export class DatabaseService {
         );
       `;
 
-      const orderSql = `
-        CREATE TABLE IF NOT EXISTS PizzaOrder (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          orderDate DATETIME NOT NULL,
-          status ENUM('preparing', 'ready') NOT NULL,
-          totalAmount DECIMAL(10, 2) NOT NULL
-        );
-      `;
-
-      const drinkSql = `
-        CREATE TABLE IF NOT EXISTS Drink (
+      const employeeSql = `
+        CREATE TABLE IF NOT EXISTS Employee (
           id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
-          description TEXT,
-          price DECIMAL(10, 2) NOT NULL
+          surname VARCHAR(255) NOT NULL,
+          patronymic VARCHAR(255),
+          phone VARCHAR(15) NOT NULL,
+          role VARCHAR(50) NOT NULL
         );
       `;
 
@@ -116,26 +122,15 @@ export class DatabaseService {
         );
       `;
 
-      const sb = `
-        CREATE TABLE IF NOT EXISTS PizzaIngredient (
-          pizza_id INT NOT NULL,
-          ingredient_id INT NOT NULL,
-          PRIMARY KEY (pizza_id, ingredient_id),
-          FOREIGN KEY (pizza_id) REFERENCES Pizza(id) ON DELETE CASCADE,
-          FOREIGN KEY (ingredient_id) REFERENCES Ingredient(id) ON DELETE CASCADE
-        );
-      `;
-
+      await this.connection.query(productSql);
+      await this.connection.query(productVariant);
+      await this.connection.query(productOrderSql);
+      await this.connection.query(productOrderItem);
       await this.connection.query(employeeSql);
-      await this.connection.query(pizzaSql);
-      await this.connection.query(ingredientSql);
       await this.connection.query(workplaceSql);
-      await this.connection.query(orderSql);
-      await this.connection.query(drinkSql);
+      await this.connection.query(employeeWorkplaceSql);
       await this.connection.query(clientSql);
       await this.connection.query(userSql);
-      await this.connection.query(sb);
-      await this.connection.query(employeeWorkplaceSql);
     } catch (error) {
       // Log an error message if the connection fails
       this.logger.error('Error connecting to MySQL database', error.stack);
