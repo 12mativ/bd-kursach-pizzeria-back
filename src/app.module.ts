@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { DatabaseService } from './database.service';
 import { EmployeesModule } from './employees/employees.module';
-import { WorkplacesModule } from './workplaces/workplaces.module';
-import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
-import { PizzaModule } from './pizza/pizza.module';
+import { OrdersModule } from './orders/orders.module';
 import { ProductsModule } from './products/products.module';
+import { WorkplacesModule } from './workplaces/workplaces.module';
+import { ProductVariantsModule } from './product-variants/product-variants.module';
 
 @Module({
   imports: [
@@ -15,10 +16,11 @@ import { ProductsModule } from './products/products.module';
       isGlobal: true,
     }),
     EmployeesModule, 
-    WorkplacesModule, 
+    WorkplacesModule,
     AuthModule,
-    PizzaModule,
-    ProductsModule
+    ProductsModule,
+    OrdersModule,
+    ProductVariantsModule
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseService],

@@ -14,6 +14,12 @@ export interface Product {
   productType: ProductType;
 }
 
+export interface ProductVariant {
+  product_id: number;
+  variant_name: string;
+  price_modifier: number;
+}
+
 @Injectable()
 export class ProductsService {
   private readonly uploadDir = path.join(process.cwd(), 'uploads', 'pizzas');
@@ -26,17 +32,22 @@ export class ProductsService {
   async uploadImage(id: number, file: Express.Multer.File): Promise<Product> {
     const fileName = `${id}-${Date.now()}${path.extname(file.originalname)}`;
     const filePath = path.join(this.uploadDir, fileName);
-    
+
     // Сохраняем файл
     fs.writeFileSync(filePath, file.buffer);
-    
+
     // Обновляем путь к изображению в базе данных
     const imageUrl = `/uploads/pizzas/${fileName}`;
     return this.dbService.updateAndReturn<Product>('Product', id, { imageUrl });
   }
 
-  create(createProductDto: CreateProductDto) {
-    return this.dbService.insertAndReturn<Product>('Product', createProductDto);
+  async create(createProductDto: CreateProductDto) {
+    const newProduct = await this.dbService.insertAndReturn<Product>('Product', createProductDto);
+    await this.dbService.insertAndReturn<ProductVariant>('ProductVariant', {product_id: newProduct.id, variant_name: "small", price_modifier: 1});
+    await this.dbService.insertAndReturn<ProductVariant>('ProductVariant', {product_id: newProduct.id, variant_name: "medium", price_modifier: 1.5});
+    await this.dbService.insertAndReturn<ProductVariant>('ProductVariant', {product_id: newProduct.id, variant_name: "large", price_modifier: 2});
+
+    return newProduct;
   }
 
   async findAllPizzas() {
