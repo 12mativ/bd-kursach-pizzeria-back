@@ -24,6 +24,8 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
+  @Roles('ADMIN', 'CLIENT')
+  @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Создать новый заказ' })
   @ApiResponse({ 
     status: 201, 

@@ -38,4 +38,8 @@ export class CreateOrderDto {
   @IsEnum(OrderStatus)
   @IsOptional()
   status?: OrderStatus = OrderStatus.PREPARING;
+
+  @ApiProperty({ example: 1, description: 'ID клиента', required: true })
+  @IsNumber()
+  clientId: number;
 }
