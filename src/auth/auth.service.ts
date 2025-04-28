@@ -57,7 +57,7 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id, role: user.role };
+    const payload = { username: user.username, sub: user.id, role: user.role, clientId: user.client_id };
     return {
       access_token: this.jwtService.sign(payload),
     };
@@ -85,12 +85,19 @@ export class AuthService {
     });
 
     const { password, ...result } = newUser;
+
+    await this.dbService.connection.query(
+      `INSERT INTO UserClient (user_id, client_id) VALUES (?, ?)`,
+      [newUser.id, client.id]
+    )
+
     return {
       user: result,
       access_token: this.jwtService.sign({ 
         username: result.username, 
         sub: result.id, 
-        role: result.role 
+        role: result.role,
+        clientId: result.client_id 
       })
     };
   }
@@ -126,4 +133,11 @@ export class AuthService {
       })
     };
   }
-} 
+
+  async getClientId(id: number) {
+    const [clientId] = await this.dbService.connection.query(
+      `SELECT client_id FROM UserClient WHERE user_id = ?`,
+      [id]
+    )
+  }
+}

@@ -132,6 +132,16 @@ export class DatabaseService {
         );
       `;
 
+      const userClientSql = `
+        CREATE TABLE IF NOT EXISTS UserClient (
+          user_id INT NOT NULL,
+          client_id INT NOT NULL,
+          PRIMARY KEY (user_id, client_id),
+          FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
+          FOREIGN KEY (client_id) REFERENCES Client(id) ON DELETE CASCADE
+        );
+      `;
+
       await this.connection.query(productSql);
       await this.connection.query(productVariant);
       await this.connection.query(productOrderSql);
@@ -142,6 +152,7 @@ export class DatabaseService {
       await this.connection.query(clientSql);
       await this.connection.query(userSql);
       await this.connection.query(clientProductOrderSql);
+      await this.connection.query(userClientSql);
     } catch (error) {
       // Log an error message if the connection fails
       this.logger.error('Error connecting to MySQL database', error.stack);

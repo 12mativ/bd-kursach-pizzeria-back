@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException, UseGuards, Get, Request } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, UseGuards, Get, Request, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterClientDto } from './dto/register-client.dto';
@@ -86,6 +86,11 @@ export class AuthController {
   })
   async registerEmployee(@Body() registerDto: RegisterEmployeeDto) {
     return this.authService.registerEmployee(registerDto);
+  }
+
+  @Get("clientId")
+  async getClientId(@Param('id') id: number) {
+    return this.authService.getClientId(id);
   }
 
   @Get('check-session')

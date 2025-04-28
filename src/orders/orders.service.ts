@@ -12,7 +12,6 @@ export class OrdersService {
     // Start a transaction
     const connection = this.dbService.getConnection();
     await connection.beginTransaction();
-
     try {
       // Calculate total amount by fetching product prices
       let totalAmount = 0;
@@ -34,13 +33,13 @@ export class OrdersService {
         // Add price * quantity to total
         totalAmount += product.price * item.quantity;
 
-        // If variant exists, apply price modifier
-        if (item.variant_id) {
-          const [variantRows]: any = await connection.query(
-            'SELECT price_modifier FROM ProductVariant WHERE id = ? AND product_id = ?',
-            [item.variant_id, item.product_id],
-          );
-        }
+        // // If variant exists, apply price modifier
+        // if (variantId) {
+        //   const [variantRows]: any = await connection.query(
+        //     'SELECT price_modifier FROM ProductVariant WHERE id = ? AND product_id = ?',
+        //     [variantId, item.product_id],
+        //   );
+        // }
       }
 
       // Create order
@@ -63,9 +62,15 @@ export class OrdersService {
 
       // Insert order items
       for (const item of createOrderDto.items) {
+        const [variantId] = await connection.query(
+          `SELECT id FROM ProductVariant WHERE product_id = ? AND variant_name = ?`,
+          [item.product_id, item.variant_name]
+        )
+
         await connection.query(
           'INSERT INTO ProductOrderItem (order_id, product_id, variant_id, quantity) VALUES (?, ?, ?, ?)',
-          [order.id, item.product_id, item.variant_id || null, item.quantity],
+          //@ts-ignore
+          [order.id, item.product_id, variantId[0].id || null, item.quantity],
         );
       }
 
@@ -152,6 +157,10 @@ export class OrdersService {
             [item.product_id],
           );
 
+          const [variantId] = await connection.query(
+            `SELECT id FROM ProductVariant WHERE product_id = ${item.product_id}, variant_name = ${item.variant_name}`
+          )
+
           if (!productRows || productRows.length === 0) {
             throw new NotFoundException(
               `Product with ID ${item.product_id} not found`,
@@ -164,10 +173,11 @@ export class OrdersService {
           totalAmount += product.price * item.quantity;
 
           // If variant exists, apply price modifier
-          if (item.variant_id) {
+          if (variantId) {
             const [variantRows]: any = await connection.query(
               'SELECT price_modifier FROM ProductVariant WHERE id = ? AND product_id = ?',
-              [item.variant_id, item.product_id],
+              //@ts-ignore
+              [variantId.id, item.product_id],
             );
 
             if (variantRows && variantRows.length > 0) {
@@ -178,7 +188,8 @@ export class OrdersService {
           // Insert new item
           await connection.query(
             'INSERT INTO ProductOrderItem (order_id, product_id, variant_id, quantity) VALUES (?, ?, ?, ?)',
-            [id, item.product_id, item.variant_id || null, item.quantity],
+            //@ts-ignore
+            [id, item.product_id, variantId.id || null, item.quantity],
           );
         }
 
