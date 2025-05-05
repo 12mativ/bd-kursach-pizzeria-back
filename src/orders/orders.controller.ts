@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -15,7 +16,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Order } from './entities/order.entity';
+import { Order, OrderWithProducts } from './entities/order.entity';
 
 @ApiTags('Заказы')
 @Controller('orders')
@@ -36,15 +37,26 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Получить все заказы' })
+  // @Get()
+  // @ApiOperation({ summary: 'Получить все заказы' })
+  // @ApiResponse({ 
+  //   status: 200, 
+  //   description: 'Список всех заказов',
+  //   type: [Order]
+  // })
+  // findAll() {
+  //   return this.ordersService.findAll();
+  // }
+
+  @Get('')
+  @ApiOperation({ summary: 'Получить все заказы клиента' })
   @ApiResponse({ 
     status: 200, 
     description: 'Список всех заказов',
-    type: [Order]
+    type: [OrderWithProducts]
   })
-  findAll() {
-    return this.ordersService.findAll();
+  findByClient(@Query('clientId') id: string) {
+    return this.ordersService.findByClientId(+id);
   }
 
   @Get(':id')
