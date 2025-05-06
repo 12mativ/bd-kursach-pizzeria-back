@@ -16,7 +16,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Order, OrderWithProducts } from './entities/order.entity';
+import { Order, OrderStatus, OrderWithProducts } from './entities/order.entity';
 
 @ApiTags('Заказы')
 @Controller('orders')
@@ -37,18 +37,18 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto);
   }
 
-  // @Get()
-  // @ApiOperation({ summary: 'Получить все заказы' })
-  // @ApiResponse({ 
-  //   status: 200, 
-  //   description: 'Список всех заказов',
-  //   type: [Order]
-  // })
-  // findAll() {
-  //   return this.ordersService.findAll();
-  // }
+  @Get()
+  @ApiOperation({ summary: 'Получить все заказы' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Список всех заказов',
+    type: [Order]
+  })
+  findAll() {
+    return this.ordersService.findAll();
+  }
 
-  @Get('')
+  @Get('/client')
   @ApiOperation({ summary: 'Получить все заказы клиента' })
   @ApiResponse({ 
     status: 200, 
@@ -57,6 +57,28 @@ export class OrdersController {
   })
   findByClient(@Query('clientId') id: string) {
     return this.ordersService.findByClientId(+id);
+  }
+
+  @Get('/ready')
+  @ApiOperation({ summary: 'Получить все готовые заказы' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Список всех заказов',
+    type: [OrderWithProducts]
+  })
+  findAllReady() {
+    return this.ordersService.findOrdersByStatus(OrderStatus.READY);
+  }
+
+  @Get('/preparing')
+  @ApiOperation({ summary: 'Получить все готовящиеся заказы' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Список всех заказов',
+    type: [OrderWithProducts]
+  })
+  findAllPreparing() {
+    return this.ordersService.findOrdersByStatus(OrderStatus.PREPARING);
   }
 
   @Get(':id')

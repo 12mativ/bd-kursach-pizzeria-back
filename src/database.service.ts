@@ -142,6 +142,26 @@ export class DatabaseService {
         );
       `;
 
+      const workShift = `
+        CREATE TABLE IF NOT EXISTS WorkShift (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          start_time TIME NOT NULL,
+          end_time TIME NOT NULL
+        );
+      `
+
+      const employeeSchedule = `
+        CREATE TABLE IF NOT EXISTS EmployeeSchedule (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          employee_id INT NOT NULL,
+          shift_id INT NOT NULL,
+          work_date DATE NOT NULL,
+          FOREIGN KEY (employee_id) REFERENCES Employee(id) ON DELETE CASCADE,
+          FOREIGN KEY (shift_id) REFERENCES WorkShift(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_employee_schedule (employee_id, work_date)
+        );
+      `
+
       await this.connection.query(productSql);
       await this.connection.query(productVariant);
       await this.connection.query(productOrderSql);
@@ -153,6 +173,8 @@ export class DatabaseService {
       await this.connection.query(userSql);
       await this.connection.query(clientProductOrderSql);
       await this.connection.query(userClientSql);
+      await this.connection.query(workShift);
+      await this.connection.query(employeeSchedule);
     } catch (error) {
       // Log an error message if the connection fails
       this.logger.error('Error connecting to MySQL database', error.stack);

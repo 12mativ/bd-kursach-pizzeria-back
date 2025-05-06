@@ -9,6 +9,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ProductsModule } from './products/products.module';
 import { WorkplacesModule } from './workplaces/workplaces.module';
 import { ProductVariantsModule } from './product-variants/product-variants.module';
+import { EmployeeSchedulesModule } from './employee-schedules/employee-schedules.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { ProductVariantsModule } from './product-variants/product-variants.modul
     AuthModule,
     ProductsModule,
     OrdersModule,
-    ProductVariantsModule
+    ProductVariantsModule,
+    EmployeeSchedulesModule,
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseService],

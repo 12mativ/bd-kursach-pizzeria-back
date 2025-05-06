@@ -17,20 +17,20 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
     const connection = this.dbService.getConnection();
     await connection.beginTransaction();
-    
+
     try {
       let totalAmount = 0;
       const productPrices = new Map<number, number>();
       const variantModifiers = new Map<number, number>();
 
       // Получаем цены всех продуктов одним запросом
-      const productIds = createOrderDto.items.map(item => item.product_id);
+      const productIds = createOrderDto.items.map((item) => item.product_id);
       if (productIds.length > 0) {
         const [productRows]: any = await connection.query(
           'SELECT id, price FROM Product WHERE id IN (?)',
-          [productIds]
+          [productIds],
         );
-        
+
         productRows.forEach((product: any) => {
           productPrices.set(product.id, product.price);
         });
@@ -38,11 +38,13 @@ export class OrdersService {
 
       // Получаем модификаторы вариантов
       const variantQueries = createOrderDto.items
-        .filter(item => item.variant_name)
-        .map(item => connection.query(
-          'SELECT id, price_modifier FROM ProductVariant WHERE product_id = ? AND variant_name = ?',
-          [item.product_id, item.variant_name]
-        ));
+        .filter((item) => item.variant_name)
+        .map((item) =>
+          connection.query(
+            'SELECT id, price_modifier FROM ProductVariant WHERE product_id = ? AND variant_name = ?',
+            [item.product_id, item.variant_name],
+          ),
+        );
 
       const variantResults = await Promise.all(variantQueries);
       variantResults.forEach(([rows]: any) => {
@@ -55,18 +57,21 @@ export class OrdersService {
       for (const item of createOrderDto.items) {
         const productPrice = productPrices.get(item.product_id);
         if (productPrice === undefined) {
-          throw new NotFoundException(`Product with ID ${item.product_id} not found`);
+          throw new NotFoundException(
+            `Product with ID ${item.product_id} not found`,
+          );
         }
 
         let itemPrice = productPrice;
         if (item.variant_name) {
           const variantId = variantResults.find(
-            ([rows]: any) => rows && rows.length > 0 && rows[0].product_id === item.product_id
+            ([rows]: any) =>
+              rows && rows.length > 0 && rows[0].product_id === item.product_id,
           )?.[0]?.[0]?.id;
-          
+
           if (variantId) {
             const modifier = variantModifiers.get(variantId) || 0;
-            itemPrice += modifier;
+            itemPrice *= modifier;
           }
         }
 
@@ -82,15 +87,15 @@ export class OrdersService {
 
       const [orderResult] = await connection.query(
         'INSERT INTO ProductOrder SET ?',
-        [orderData]
+        [orderData],
       );
-      
+
       const orderId = (orderResult as any).insertId;
 
       // Связываем клиента с заказом
       await connection.query(
         'INSERT INTO ClientProductOrder (client_id, product_order_id) VALUES (?, ?)',
-        [createOrderDto.clientId, orderId]
+        [createOrderDto.clientId, orderId],
       );
 
       // Добавляем элементы заказа
@@ -99,14 +104,14 @@ export class OrdersService {
         if (item.variant_name) {
           const [variantRows]: any = await connection.query(
             'SELECT id FROM ProductVariant WHERE product_id = ? AND variant_name = ?',
-            [item.product_id, item.variant_name]
+            [item.product_id, item.variant_name],
           );
           variantId = variantRows[0]?.id || null;
         }
 
         await connection.query(
           'INSERT INTO ProductOrderItem (order_id, product_id, variant_id, quantity) VALUES (?, ?, ?, ?)',
-          [orderId, item.product_id, variantId, item.quantity]
+          [orderId, item.product_id, variantId, item.quantity],
         );
       });
 
@@ -122,7 +127,7 @@ export class OrdersService {
 
   async findAll(): Promise<Order[]> {
     const [rows]: any = await this.dbService.connection.query(
-      'SELECT * FROM ProductOrder ORDER BY orderDate DESC'
+      'SELECT * FROM ProductOrder ORDER BY orderDate DESC',
     );
     return rows.map((row: any) => ({
       ...row,
@@ -136,19 +141,17 @@ export class OrdersService {
     }
 
     try {
-      // 1. Получаем заказы клиента
       const [orders]: any = await this.dbService.connection.query(
         `SELECT po.* FROM ProductOrder po
          JOIN ClientProductOrder cpo ON po.id = cpo.product_order_id
          WHERE cpo.client_id = ? ORDER BY po.orderDate DESC`,
-        [clientId]
+        [clientId],
       );
 
       if (!orders || orders.length === 0) {
         return [];
       }
 
-      // 2. Получаем товары для заказов
       const orderIds = orders.map((o: any) => o.id);
       const [allProducts]: any = await this.dbService.connection.query(
         `SELECT 
@@ -162,23 +165,26 @@ export class OrdersService {
          LEFT JOIN Product p ON poi.product_id = p.id
          LEFT JOIN ProductVariant pv ON poi.variant_id = pv.id
          WHERE poi.order_id IN (?)`,
-        [orderIds]
+        [orderIds],
       );
 
       // 3. Группируем товары
-      const productsByOrderId = allProducts.reduce((acc: Record<number, OrderProductDto[]>, product: any) => {
-        if (!acc[product.order_id]) {
-          acc[product.order_id] = [];
-        }
-        acc[product.order_id].push({
-          id: product.id,
-          name: product.name,
-          price: Number(product.price),
-          variant_name: product.variant_name,
-          quantity: product.quantity,
-        });
-        return acc;
-      }, {});
+      const productsByOrderId = allProducts.reduce(
+        (acc: Record<number, OrderProductDto[]>, product: any) => {
+          if (!acc[product.order_id]) {
+            acc[product.order_id] = [];
+          }
+          acc[product.order_id].push({
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            variant_name: product.variant_name,
+            quantity: product.quantity,
+          });
+          return acc;
+        },
+        {},
+      );
 
       // 4. Формируем результат
       return orders.map((order: any) => ({
@@ -194,10 +200,81 @@ export class OrdersService {
     }
   }
 
+  async findOrdersByStatus(status: OrderStatus): Promise<OrderWithProducts[]> {
+    if (!Object.values(OrderStatus).includes(status)) {
+      throw new Error('Invalid order status');
+    }
+
+    try {
+      const [orders]: any = await this.dbService.connection.query(
+        `SELECT po.* FROM ProductOrder po
+             WHERE po.status = ? ORDER BY po.orderDate DESC`,
+        [status],
+      );
+
+      if (!orders || orders.length === 0) {
+        return [];
+      }
+
+      return this.getOrdersWithProducts(orders);
+    } catch (error) {
+      console.error(`Error in findOrdersByStatus (${status}):`, error);
+      throw new Error(`Failed to fetch ${status} orders`);
+    }
+  }
+
+  private async getOrdersWithProducts(
+    orders: any[],
+  ): Promise<OrderWithProducts[]> {
+    const orderIds = orders.map((o: any) => o.id);
+
+    const [allProducts]: any = await this.dbService.connection.query(
+      `SELECT 
+            poi.order_id,
+            p.id,
+            p.name,
+            (p.price * IFNULL(pv.price_modifier, 1)) AS price,
+            IFNULL(pv.variant_name, 'standard') AS variant_name,
+            poi.quantity
+        FROM ProductOrderItem poi
+        LEFT JOIN Product p ON poi.product_id = p.id
+        LEFT JOIN ProductVariant pv ON poi.variant_id = pv.id
+        WHERE poi.order_id IN (?)`,
+      [orderIds],
+    );
+
+    // Группируем товары по order_id
+    const productsByOrderId = allProducts.reduce(
+      (acc: Record<number, OrderProductDto[]>, product: any) => {
+        if (!acc[product.order_id]) {
+          acc[product.order_id] = [];
+        }
+        acc[product.order_id].push({
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          variant_name: product.variant_name,
+          quantity: product.quantity,
+        });
+        return acc;
+      },
+      {},
+    );
+
+    // Формируем результат
+    return orders.map((order: any) => ({
+      id: order.id,
+      orderDate: order.orderDate.toISOString(),
+      status: order.status,
+      totalAmount: order.totalAmount,
+      products: productsByOrderId[order.id] || [],
+    }));
+  }
+
   async findOne(id: number): Promise<{ order: Order; items: OrderItem[] }> {
     const [orderRows]: any = await this.dbService.connection.query(
       'SELECT * FROM ProductOrder WHERE id = ?',
-      [id]
+      [id],
     );
 
     if (!orderRows || orderRows.length === 0) {
@@ -218,7 +295,7 @@ export class OrdersService {
        LEFT JOIN Product p ON poi.product_id = p.id
        LEFT JOIN ProductVariant pv ON poi.variant_id = pv.id
        WHERE poi.order_id = ?`,
-      [id]
+      [id],
     );
 
     return {
@@ -243,7 +320,7 @@ export class OrdersService {
       // Проверяем существование заказа
       const [orderRows]: any = await connection.query(
         'SELECT * FROM ProductOrder WHERE id = ?',
-        [id]
+        [id],
       );
 
       if (!orderRows || orderRows.length === 0) {
@@ -254,7 +331,7 @@ export class OrdersService {
       if (updateOrderDto.status) {
         await connection.query(
           'UPDATE ProductOrder SET status = ? WHERE id = ?',
-          [updateOrderDto.status, id]
+          [updateOrderDto.status, id],
         );
       }
 
@@ -263,18 +340,18 @@ export class OrdersService {
         // Удаляем старые товары
         await connection.query(
           'DELETE FROM ProductOrderItem WHERE order_id = ?',
-          [id]
+          [id],
         );
 
         // Рассчитываем новую сумму
         let totalAmount = 0;
-        const productIds = updateOrderDto.items.map(item => item.product_id);
+        const productIds = updateOrderDto.items.map((item) => item.product_id);
         const productPrices = new Map<number, number>();
 
         if (productIds.length > 0) {
           const [productRows]: any = await connection.query(
             'SELECT id, price FROM Product WHERE id IN (?)',
-            [productIds]
+            [productIds],
           );
 
           productRows.forEach((product: any) => {
@@ -286,7 +363,9 @@ export class OrdersService {
         for (const item of updateOrderDto.items) {
           const productPrice = productPrices.get(item.product_id);
           if (productPrice === undefined) {
-            throw new NotFoundException(`Product with ID ${item.product_id} not found`);
+            throw new NotFoundException(
+              `Product with ID ${item.product_id} not found`,
+            );
           }
 
           let variantId = null;
@@ -295,7 +374,7 @@ export class OrdersService {
           if (item.variant_name) {
             const [variantRows]: any = await connection.query(
               'SELECT id, price_modifier FROM ProductVariant WHERE product_id = ? AND variant_name = ?',
-              [item.product_id, item.variant_name]
+              [item.product_id, item.variant_name],
             );
 
             if (variantRows && variantRows.length > 0) {
@@ -309,14 +388,14 @@ export class OrdersService {
 
           await connection.query(
             'INSERT INTO ProductOrderItem (order_id, product_id, variant_id, quantity) VALUES (?, ?, ?, ?)',
-            [id, item.product_id, variantId, item.quantity]
+            [id, item.product_id, variantId, item.quantity],
           );
         }
 
         // Обновляем общую сумму
         await connection.query(
           'UPDATE ProductOrder SET totalAmount = ? WHERE id = ?',
-          [totalAmount, id]
+          [totalAmount, id],
         );
       }
 
@@ -325,7 +404,7 @@ export class OrdersService {
       // Возвращаем обновленный заказ
       const [updatedOrder]: any = await connection.query(
         'SELECT * FROM ProductOrder WHERE id = ?',
-        [id]
+        [id],
       );
 
       return {
@@ -345,7 +424,7 @@ export class OrdersService {
     try {
       const [orderRows]: any = await connection.query(
         'SELECT * FROM ProductOrder WHERE id = ?',
-        [id]
+        [id],
       );
 
       if (!orderRows || orderRows.length === 0) {
@@ -360,20 +439,17 @@ export class OrdersService {
       // Удаляем связь с клиентом
       await connection.query(
         'DELETE FROM ClientProductOrder WHERE product_order_id = ?',
-        [id]
+        [id],
       );
 
       // Удаляем элементы заказа
       await connection.query(
         'DELETE FROM ProductOrderItem WHERE order_id = ?',
-        [id]
+        [id],
       );
 
       // Удаляем сам заказ
-      await connection.query(
-        'DELETE FROM ProductOrder WHERE id = ?',
-        [id]
-      );
+      await connection.query('DELETE FROM ProductOrder WHERE id = ?', [id]);
 
       await connection.commit();
       return order;
