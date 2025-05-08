@@ -69,4 +69,32 @@ export class EmployeeSchedulesService {
     );
     return result;
   }
+
+  async getAllSchedulesWithEmployees(startDate: string, endDate: string) {
+    if (new Date(startDate) > new Date(endDate)) {
+      throw new Error('Дата начала периода не может быть позже даты окончания');
+    }
+  
+    const [schedules] = await this.dbService.connection.query(
+      `SELECT 
+        es.id AS assignment_id,
+        es.work_date,
+        ws.start_time,
+        ws.end_time,
+        e.id AS employee_id,
+        e.name,
+        e.surname,
+        e.patronymic,
+        e.phone,
+        e.role
+      FROM EmployeeSchedule es
+      JOIN WorkShift ws ON es.shift_id = ws.id
+      JOIN Employee e ON es.employee_id = e.id
+      WHERE es.work_date BETWEEN ? AND ?
+      ORDER BY es.work_date ASC, ws.start_time ASC`,
+      [startDate, endDate]
+    );
+  
+    return schedules;
+  }
 }

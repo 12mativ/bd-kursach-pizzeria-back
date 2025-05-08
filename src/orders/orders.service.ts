@@ -21,7 +21,6 @@ export class OrdersService {
     try {
       let totalAmount = 0;
       const productPrices = new Map<number, number>();
-      const variantModifiers = new Map<number, number>();
 
       // Получаем цены всех продуктов одним запросом
       const productIds = createOrderDto.items.map((item) => item.product_id);
@@ -35,24 +34,7 @@ export class OrdersService {
           productPrices.set(product.id, product.price);
         });
       }
-
-      // Получаем модификаторы вариантов
-      const variantQueries = createOrderDto.items
-        .filter((item) => item.variant_name)
-        .map((item) =>
-          connection.query(
-            'SELECT id, price_modifier FROM ProductVariant WHERE product_id = ? AND variant_name = ?',
-            [item.product_id, item.variant_name],
-          ),
-        );
-
-      const variantResults = await Promise.all(variantQueries);
-      variantResults.forEach(([rows]: any) => {
-        if (rows && rows.length > 0) {
-          variantModifiers.set(rows[0].id, rows[0].price_modifier);
-        }
-      });
-
+      
       // Рассчитываем общую сумму
       for (const item of createOrderDto.items) {
         const productPrice = productPrices.get(item.product_id);
@@ -64,15 +46,13 @@ export class OrdersService {
 
         let itemPrice = productPrice;
         if (item.variant_name) {
-          const variantId = variantResults.find(
-            ([rows]: any) =>
-              rows && rows.length > 0 && rows[0].product_id === item.product_id,
-          )?.[0]?.[0]?.id;
 
-          if (variantId) {
-            const modifier = variantModifiers.get(variantId) || 0;
-            itemPrice *= modifier;
-          }
+          const modifier = await connection.query(
+            'SELECT price_modifier FROM ProductVariant WHERE product_id = ? AND variant_name = ?',
+            [item.product_id, item.variant_name],
+          )
+
+          itemPrice *= modifier[0][0].price_modifier;
         }
 
         totalAmount += itemPrice * item.quantity;
@@ -124,7 +104,6 @@ export class OrdersService {
       throw error;
     }
   }
-
   async findAll(): Promise<Order[]> {
     const [rows]: any = await this.dbService.connection.query(
       'SELECT * FROM ProductOrder ORDER BY orderDate DESC',

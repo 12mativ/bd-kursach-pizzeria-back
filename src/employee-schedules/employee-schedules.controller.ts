@@ -110,6 +110,36 @@ export class EmployeeSchedulesController {
     );
   }
 
+  @Get('period-schedule')
+  @ApiOperation({
+    summary: 'Получить расписание сотрудников за период',
+    description: 'Возвращает расписание сотрудников за указанный период',
+  })
+  @ApiQuery({
+    name: 'start',
+    description: 'Начальная дата (YYYY-MM-DD)',
+    required: true,
+  })
+  @ApiQuery({
+    name: 'end',
+    description: 'Конечная дата (YYYY-MM-DD)',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    type: [EmployeeScheduleResponse],
+    description: 'Список назначений сотрудника',
+  })
+  async getAllSchedulesWithEmployees(
+    @Query('start') startDate: string,
+    @Query('end') endDate: string,
+  ) {
+    return this.employeeSchedulesService.getAllSchedulesWithEmployees(
+      startDate,
+      endDate,
+    );
+  }
+
   @Get('shifts')
   @ApiOperation({
     summary: 'Получить список всех смен',
