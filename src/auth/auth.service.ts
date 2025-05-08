@@ -57,7 +57,7 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id, role: user.role, clientId: user.client_id };
+    const payload = { username: user.username, sub: user.id, role: user.role, clientId: user.client_id, employeeId: user.employee_id };
     return {
       access_token: this.jwtService.sign(payload),
     };
@@ -97,7 +97,8 @@ export class AuthService {
         username: result.username, 
         sub: result.id, 
         role: result.role,
-        clientId: result.client_id 
+        clientId: result.client_id,
+        employeeId: result.employee_id,
       })
     };
   }
@@ -129,7 +130,9 @@ export class AuthService {
       access_token: this.jwtService.sign({ 
         username: result.username, 
         sub: result.id, 
-        role: result.role 
+        role: result.role,
+        clientId: result.client_id,
+        employeeId: result.employee_id,
       })
     };
   }
