@@ -113,14 +113,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Невалидная сессия' })
   async checkSession(@Request() req) {
-    return {
-      valid: true,
-      user: {
-        id: req.user.id,
-        username: req.user.username,
-        role: req.user.role
-      }
-    };
+    return this.authService.checkSession(req);
   }
 
   @Post('logout')

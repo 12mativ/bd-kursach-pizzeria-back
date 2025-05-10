@@ -49,7 +49,7 @@ export class AuthService {
     const [users] = await this.dbService.connection.query(sql, [login, login]);
     const user = users[0];
 
-    if (user && await bcrypt.compare(password, user.password)) {
+    if (user && (await bcrypt.compare(password, user.password))) {
       const { password, ...result } = user;
       return result;
     }
@@ -57,7 +57,13 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id, role: user.role, clientId: user.client_id, employeeId: user.employee_id };
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+      clientId: user.client_id,
+      employeeId: user.employee_id,
+    };
     return {
       access_token: this.jwtService.sign(payload),
     };
@@ -88,18 +94,18 @@ export class AuthService {
 
     await this.dbService.connection.query(
       `INSERT INTO UserClient (user_id, client_id) VALUES (?, ?)`,
-      [newUser.id, client.id]
-    )
+      [newUser.id, client.id],
+    );
 
     return {
       user: result,
-      access_token: this.jwtService.sign({ 
-        username: result.username, 
-        sub: result.id, 
+      access_token: this.jwtService.sign({
+        username: result.username,
+        sub: result.id,
         role: result.role,
         clientId: result.client_id,
         employeeId: result.employee_id,
-      })
+      }),
     };
   }
 
@@ -107,13 +113,16 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
     // Создаем сотрудника
-    const employee = await this.dbService.insertAndReturn<Employee>('Employee', {
-      name: registerDto.name,
-      surname: registerDto.surname,
-      patronymic: registerDto.patronymic,
-      phone: registerDto.phone,
-      role: registerDto.role,
-    });
+    const employee = await this.dbService.insertAndReturn<Employee>(
+      'Employee',
+      {
+        name: registerDto.name,
+        surname: registerDto.surname,
+        patronymic: registerDto.patronymic,
+        phone: registerDto.phone,
+        role: registerDto.role,
+      },
+    );
 
     // Создаем пользователя
     const newUser = await this.dbService.insertAndReturn<User>('User', {
@@ -127,20 +136,51 @@ export class AuthService {
     const { password, ...result } = newUser;
     return {
       user: result,
-      access_token: this.jwtService.sign({ 
-        username: result.username, 
-        sub: result.id, 
+      access_token: this.jwtService.sign({
+        username: result.username,
+        sub: result.id,
         role: result.role,
         clientId: result.client_id,
         employeeId: result.employee_id,
-      })
+      }),
     };
   }
 
   async getClientId(id: number) {
     const [clientId] = await this.dbService.connection.query(
       `SELECT client_id FROM UserClient WHERE user_id = ?`,
-      [id]
-    )
+      [id],
+    );
+  }
+
+  async checkSession(req: Request) {
+    try {
+      // Получаем полные данные пользователя из БД
+      const [user] = await this.dbService.connection.query(
+        `SELECT id, username, role, employee_id, client_id 
+           FROM User 
+           WHERE id = ?`,
+        //@ts-ignore
+        [req.user.id],
+      );
+      
+      //@ts-ignore
+      if (!user || user.length === 0) {
+        throw new UnauthorizedException('Пользователь не найден');
+      }
+
+      return {
+        valid: true,
+        user: {
+          id: user[0].id,
+          username: user[0].username,
+          role: user[0].role,
+          employeeId: user[0].employee_id,
+          clientId: user[0].client_id,
+        },
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Невалидная сессия');
+    }
   }
 }

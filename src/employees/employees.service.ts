@@ -43,24 +43,30 @@ export class EmployeesService {
     const updatedEmployee = await this.dbService.updateAndReturn<Employee>(
       'Employee',
       id,
-      updateEmployeeDto
+      updateEmployeeDto,
     );
 
     return updatedEmployee;
   }
 
   async remove(id: number) {
-    const deletedEmployee = await this.dbService.deleteAndReturn<Employee | null>(
-      'Employee',
-      id,
-    )
+    await this.dbService.connection.query(
+      'DELETE FROM User WHERE employee_id = ?',
+      [id],
+    );
+
+    const deletedEmployee =
+      await this.dbService.deleteAndReturn<Employee | null>('Employee', id);
 
     return deletedEmployee;
   }
 
-  async assignWorkplace(employeeId: number, assignWorkplaceDto: AssignWorkplaceDto) {
+  async assignWorkplace(
+    employeeId: number,
+    assignWorkplaceDto: AssignWorkplaceDto,
+  ) {
     const { workplaceId } = assignWorkplaceDto;
-    
+
     // Проверяем существование сотрудника и рабочего места
     const [employees] = await this.dbService.connection.query(
       'SELECT * FROM Employee WHERE id = ?',
@@ -97,11 +103,13 @@ export class EmployeesService {
   }
 
   async removeWorkplace(employeeId: number, workplaceId: number) {
-    const [result] = await this.dbService.connection.query<import('mysql2').ResultSetHeader>(
+    const [result] = await this.dbService.connection.query<
+      import('mysql2').ResultSetHeader
+    >(
       'DELETE FROM EmployeeWorkplace WHERE employee_id = ? AND workplace_id = ?',
       [employeeId, workplaceId],
     );
-    
+
     if (result.affectedRows === 0) {
       throw new Error('Сотрудник не был назначен на это рабочее место');
     }
