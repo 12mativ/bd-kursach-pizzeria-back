@@ -77,6 +77,18 @@ export class ProductsController {
     return product;
   }
 
+  @Patch('/available/:id')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Обновить доступность продукта' })
+  @ApiResponse({ status: 200, description: 'Продукт успешно обновлен' })
+  async updateAvailability(
+    @Param('id') id: string,
+  ) {
+    const product = await this.productsService.makeAvailable(+id);
+    return product;
+  }
+
   @Delete(':id')
   @Roles('ADMIN')
   @UseGuards(RolesGuard)

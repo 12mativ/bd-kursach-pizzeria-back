@@ -62,6 +62,10 @@ export class ProductsService {
     return drinks;
   }
 
+  async makeAvailable(id: number) {
+    return this.dbService.updateAndReturn<Product>('Product', id, {available: true});
+  }
+
 
   findOne(id: number) {
     return `This action returns a #${id} product`;

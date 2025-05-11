@@ -62,6 +62,7 @@ export class DatabaseService {
           product_id INT NOT NULL,
           variant_id INT,
           quantity INT NOT NULL DEFAULT 1,
+          available BOOLEAN NOT NULL DEFAULT TRUE,
           FOREIGN KEY (order_id) REFERENCES ProductOrder(id) ON DELETE CASCADE,
           FOREIGN KEY (product_id) REFERENCES Product(id),
           FOREIGN KEY (variant_id) REFERENCES ProductVariant(id)
