@@ -62,8 +62,8 @@ export class ProductsService {
     return drinks;
   }
 
-  async makeAvailable(id: number) {
-    return this.dbService.updateAndReturn<Product>('Product', id, {available: true});
+  async makeAvailable(id: number, availability: boolean) {
+    return this.dbService.updateAndReturn<Product>('Product', id, {available: !availability});
   }
 
 

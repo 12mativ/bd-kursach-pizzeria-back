@@ -32,7 +32,8 @@ export class DatabaseService {
           description TEXT,
           price DECIMAL(10, 2) NOT NULL,
           imageUrl VARCHAR(255),
-          productType ENUM('PIZZA', 'DRINK') NOT NULL
+          productType ENUM('PIZZA', 'DRINK') NOT NULL,
+          available BOOLEAN NOT NULL DEFAULT TRUE
         );
       `;
 
@@ -62,7 +63,6 @@ export class DatabaseService {
           product_id INT NOT NULL,
           variant_id INT,
           quantity INT NOT NULL DEFAULT 1,
-          available BOOLEAN NOT NULL DEFAULT TRUE,
           FOREIGN KEY (order_id) REFERENCES ProductOrder(id) ON DELETE CASCADE,
           FOREIGN KEY (product_id) REFERENCES Product(id),
           FOREIGN KEY (variant_id) REFERENCES ProductVariant(id)

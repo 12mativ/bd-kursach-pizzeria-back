@@ -17,12 +17,29 @@ export class EmployeesService {
   constructor(private readonly dbService: DatabaseService) {}
 
   async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
-    const newEmployee = await this.dbService.insertAndReturn<Employee>(
-      'Employee',
-      createEmployeeDto,
-    );
-
-    return newEmployee;
+    const data = createEmployeeDto;
+  
+    const columns = Object.keys(data).join(', ');
+    const values = Object.values(data);
+    const placeholders = values.map(() => '?').join(', ');
+  
+    const insertSql = `
+      INSERT INTO Employee (${columns})
+      VALUES (${placeholders});
+    `;
+  
+    const [insertResult] = await this.dbService.connection.query(insertSql, values);
+  
+    //@ts-ignore
+    const newId = insertResult.id;
+  
+    const selectSql = `
+      SELECT * FROM Employee WHERE id = ?;
+    `;
+  
+    const [rows] = await this.dbService.connection.query(selectSql, [newId]);
+  
+    return rows[0] as Employee;
   }
 
   async findAll() {
@@ -40,13 +57,30 @@ export class EmployeesService {
   }
 
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    const updatedEmployee = await this.dbService.updateAndReturn<Employee>(
-      'Employee',
-      id,
-      updateEmployeeDto,
-    );
-
-    return updatedEmployee;
+    const data = updateEmployeeDto;
+  
+    const setClause = Object.keys(data)
+      .map((key) => `${key} = ?`)
+      .join(', ');
+  
+    const values = Object.values(data);
+    values.push(id);
+  
+    const updateSql = `
+      UPDATE Employee
+      SET ${setClause}
+      WHERE id = ?;
+    `;
+  
+    await this.dbService.connection.query(updateSql, values);
+  
+    const selectSql = `
+      SELECT * FROM Employee WHERE id = ?;
+    `;
+  
+    const [rows] = await this.dbService.connection.query(selectSql, [id]);
+  
+    return rows[0] as Employee;
   }
 
   async remove(id: number) {
@@ -54,11 +88,6 @@ export class EmployeesService {
       'DELETE FROM User WHERE employee_id = ?',
       [id],
     );
-
-    const deletedEmployee =
-      await this.dbService.deleteAndReturn<Employee | null>('Employee', id);
-
-    return deletedEmployee;
   }
 
   async assignWorkplace(

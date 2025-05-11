@@ -84,8 +84,10 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Продукт успешно обновлен' })
   async updateAvailability(
     @Param('id') id: string,
+    @Body() {availability}: {availability: boolean},
+
   ) {
-    const product = await this.productsService.makeAvailable(+id);
+    const product = await this.productsService.makeAvailable(+id, availability);
     return product;
   }
 
